@@ -17,7 +17,7 @@ class ProductController extends Controller
     public function index()
     {
         $products = Product::select('id', 'title', 'description', 'image')->get();
-        
+
         return $products;
     }
 
@@ -28,16 +28,16 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'title'=>'required',
+            'title' => 'required',
             'description' => 'required',
             'image' => 'required|image'
         ]);
 
         $imageName = Str::random() . '.' . $request->image->getClientOriginalExtension();
         Storage::disk('public')->putFileAs('product/image', $request->image, $imageName);
-        Product::create($request->post()+ ['image'=> $imageName]);
+        Product::create($request->post() + ['image' => $imageName]);
         return response()->json([
-            'message'=>'Item added successfully'
+            'message' => 'Item added successfully'
         ]);
 
         /*
@@ -78,27 +78,33 @@ class ProductController extends Controller
     {
         $request->validate([
             'title' => 'required',
-            'descirption' => 'required',
+            'description' => 'required',
             'image' => 'nullable'
         ]);
 
 
         $product->fill($request->post())->update();
 
-        if($request->hasFile('image')) {
-            if($product->image)
-            $exist = Storage::disk('public')->exists("product/image{$product->image}");
-            if($exist) {
-                Storage::disk('public')->delete("product/image{$product->image}");
-            }
+     
+        if( $request->hasFile('image') ) {                    
+
+            if($product->image) {          
+                if( Storage::disk('public')->exists("product/image/{$product->image}") ) {   
+                   
+                    Storage::disk('public')->delete("product/image/{$product->image}");                    
+                }
+            }           
+
+            
+            $imageName = Str::random() . '.' . $request->image->getClientOriginalExtension();
+            Storage::disk('public')->putFileAs('product/image', $request->image, $imageName);
+
+                                  
+            $product->image = $imageName;
+
+            $product->save();
         }
 
-        $imageName = Str::random() . '.' . $request->image->getClientOriginalExtension();
-        Storage::disk('public')->putFileAs('product/image', $request->image, $imageName);
-        $product->iamge = $imageName;
-
-        $product->save();
-     
 
         return response()->json(
             [
@@ -107,29 +113,26 @@ class ProductController extends Controller
         );
     }
 
+
+
+
     /**
      * Remove the specified resource from storage.
      */
     public function destroy(Product $product)
     {
-        /*if($request->hasFile('image')) {
-            if($product->image)
-            $exist = Storage::disk('public')->exists("product/image{$product->image}");
-            if($exist) {
-                Storage::disk('public')->delete("product/image{$product->image}");
+
+        if ($product->image) {
+            if (Storage::disk('public')->exists("product/image/{$product->image}")) {
+                Storage::disk('public')->delete("product/image/{$product->image}");
             }
-        }*/
-
-
-        //$product = Product::find(1);
-
+        }
 
         $product->delete();
 
-
         return response()->json(
             [
-                'message' => 'Supression avec succès'
+                'message_retour' => 'Item deleted successfully '
             ]
         );
     }
